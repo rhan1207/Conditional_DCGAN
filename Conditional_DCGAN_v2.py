@@ -155,9 +155,6 @@ class _netD(nn.Module):
         self.ngpu = ngpu
         self.linear = nn.Linear(28*28 + nb_digits, 14*14)
         self.main = nn.Sequential(
-            # input is (nc) x 28 x 28
-            #nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            #nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf) x 14 x 14
             nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf),
@@ -179,13 +176,7 @@ class _netD(nn.Module):
             input_l = torch.cat([input.view(-1,opt.imageSize*opt.imageSize), label],1)
             input_l = self.linear(input_l)
             input_l = input_l.view(-1, 14,14).unsqueeze(1)
-            #print(input_l.size())
             output = self.main(input_l)
-            #print(output.view(-1, ndf*4*4*4))
-            #print(output)
-            #input_l = torch.cat([label, output.view(-1, ndf*4*4*4)], 1)
-            #print(input_l)
-            #output = self.linear(input_l)
         return output.view(-1, 1)
 
 
@@ -226,24 +217,6 @@ optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
 for epoch in range(0, opt.niter):
     for i, data in enumerate(dataloader, 0):
-        '''
-        if i == 1:
-            real_cpu, real_y = data
-            real_y.unsqueeze_(1)
-            batch_size = real_cpu.size(0)
-            input.data.resize_(real_cpu.size()).copy_(real_cpu)
-            label.data.resize_(batch_size).fill_(real_label)
-            y_onehot = torch.FloatTensor(batch_size, nb_digits).zero_().scatter_(1, real_y, 1)
-            y = Variable(y_onehot)
-            noise.data.resize_(batch_size, nz, 1, 1)
-            noise.data.normal_(0, 1)
-            input_G = torch.cat([noise, y], 1)
-            output = netD(input,y)
-            print(output)
-            #print(real_cpu.view(1,-1))
-            #fake = netG(input_G)
-            #print(fake)
-        '''
         ############################
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
         ###########################
@@ -258,8 +231,7 @@ for epoch in range(0, opt.niter):
         y = Variable(y_onehot)
 
         output = netD(input,y)
-        #print(label.size())
-        #print(output.size())
+
         errD_real = criterion(output, label)
         errD_real.backward()
         D_x = output.data.mean()
@@ -272,8 +244,7 @@ for epoch in range(0, opt.niter):
         fake = netG(input_G)
         label.data.fill_(fake_label)
         output = netD(fake.detach(),y)
-        #print(label.size())
-        #print(output.size())
+
         errD_fake = criterion(output, label)
         errD_fake.backward()
         D_G_z1 = output.data.mean()
